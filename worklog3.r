@@ -128,3 +128,59 @@ t.test(treatment,control)$p.value})
 sum(pvals < 0.05/10000)
 # False Discovery Rate
 savehistory("~/repos/RLifeSciences/worklog3.r")
+head(population)
+population <- unlist(read.csv("femaleControlsPopulation.csv"))
+set.seed(1)
+pvals <- sapply(1:m, function(i){
+control  <- sample(population,6)
+treatment <- sample(population,6)
+if(!nullHypothesis[i]) treatment <- treatment + delta
+t.test(treatment,control)$p.value
+})
+m <- 10000
+N <- 12
+p0 <- 0.90
+m0 <- m*p0
+m1 <- m-m0
+delta <- 3
+nullHypothesis <- c(rep(TRUE,m0), rep(FALSE,m1))
+set.seed(1)
+pvals <- sapply ( 1 : m , function ( i ){
+control <- sample ( population , 6 )
+treatment <- sample ( population , 6 )
+if ( ! nullHypothesis [ i ]) treatment <- treatment + delta
+t.test ( treatment , control ) $ p.value
+})
+sum(pvals < 0.05/10000)
+library(genefilter) ##rowtests is here
+library(rafalib)
+install.packages(genefilter)
+source("https://bioconductor.org/biocLite.R")
+biocLite("genefilter")
+library(genefilter)
+set.seed(1)
+## Define groups to be used with rowttests
+g <- factor( c(rep(0,N),rep(1,N)) )
+B <- 1000 # number of simulations
+Qs <- replicate(B,{
+## matrix with control data (rows are tests, columns are mice)
+controls <- matrix(sample(population, N*m, replace=TRUE),nrow=m)
+## matrix with control data (rows are tests, columns are mice)
+treatments <- matrix(sample(population, N*m, replace=TRUE),nrow=m)
+## add effect to 10% of them
+treatments[which(!nullHypothesis),] <- treatments[which(!nullHypothesis),]+delta
+## combine to form one matrix
+dat <- cbind(controls,treatments)
+calls <- rowttests(dat,g)$p.value < alpha
+R=sum(calls)
+Q=ifelse(R>0,sum(nullHypothesis & calls)/R,0)
+return(Q)
+})
+savehistory("~/repos/RLifeSciences/worklog3.r")
+library(rafalib)
+mypar(1,1)
+hist(Qs) ## Q is a random variable, this is its distribution
+FDR=mean(Qs)
+print(FDR)
+set.seed(1)
+savehistory("~/repos/RLifeSciences/worklog3.r")
